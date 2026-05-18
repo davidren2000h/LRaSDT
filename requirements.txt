@@ -1,0 +1,5 @@
+openai-whisper
+stable-ts
+demucs
+pygame-ce
+pydub

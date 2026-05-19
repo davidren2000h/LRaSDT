@@ -12,7 +12,7 @@ import json
 from player import MusicPlayer
 from lyric_sync import get_display_lines
 from lyric_exporter import export_lrc, export_srt, export_json, load_lrc, load_json
-from transcriber import transcribe
+from transcriber import transcribe, align_lyrics
 from audio_processor import separate_vocals, check_ffmpeg, get_audio_duration
 
 
@@ -65,6 +65,9 @@ class AutoLyricSyncApp:
 
         self.btn_load_lrc = tk.Button(btn_row, text="Load LRC", command=self._load_lrc_file)
         self.btn_load_lrc.pack(side="left", padx=5)
+
+        self.btn_align = tk.Button(btn_row, text="Load TXT & Align", command=self._align_lyrics)
+        self.btn_align.pack(side="left", padx=5)
 
         self.lbl_status = tk.Label(proc_frame, text="Status: Ready", anchor="w", fg="gray")
         self.lbl_status.pack(fill="x", pady=(5, 0))
@@ -191,6 +194,57 @@ class AutoLyricSyncApp:
             self._set_status(f"Loaded {len(self.lyrics)} lyric lines from file.")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load lyrics: {e}")
+
+    # --- Align Lyrics from TXT ---
+    def _align_lyrics(self):
+        if not self.mp3_path:
+            messagebox.showwarning("Warning", "Please select an MP3 file first.")
+            return
+        if self.is_processing:
+            return
+
+        txt_path = filedialog.askopenfilename(
+            title="Select Lyrics TXT File",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+        )
+        if not txt_path:
+            return
+
+        self.is_processing = True
+        self.btn_align.config(state="disabled")
+        self.btn_generate.config(state="disabled")
+        thread = threading.Thread(target=self._run_alignment, args=(txt_path,), daemon=True)
+        thread.start()
+
+    def _run_alignment(self, txt_path):
+        try:
+            audio_path = self.mp3_path
+
+            # Optional vocal separation
+            if self.vocal_sep_var.get():
+                self._set_status("Status: Separating vocals...")
+                try:
+                    audio_path = separate_vocals(self.mp3_path)
+                    self._set_status("Status: Vocals separated successfully.")
+                except Exception as e:
+                    self._set_status(f"Vocal separation failed: {e}\nUsing original audio.")
+                    audio_path = self.mp3_path
+
+            self._set_status("Status: Aligning lyrics with audio... (this may take a while)")
+            model_size = self.model_var.get()
+            self.lyrics = align_lyrics(audio_path, txt_path, model_size=model_size)
+
+            if not self.lyrics:
+                self._set_status("Status: Alignment produced no results.")
+            else:
+                self._set_status(f"Status: Lyrics aligned successfully ({len(self.lyrics)} lines)")
+
+        except Exception as e:
+            self._set_status(f"Error: {e}")
+        finally:
+            self.is_processing = False
+            self.root.after(0, lambda: self.btn_align.config(state="normal"))
+            self.root.after(0, lambda: self.btn_generate.config(state="normal"))
 
     # --- Playback ---
     def _play(self):

@@ -1093,3 +1093,65 @@ Data structure design
 The first version should stay focused:
 
 **Do not aim for perfect lyric recognition. Do not aim for word-level karaoke highlighting yet. First build an MVP that can generate LRC lyrics and display them in sync during playback.**
+
+---
+
+## 21. Feature: Import Lyrics TXT and Auto-Align with Audio
+
+### Description
+
+The user provides a plain text file (.txt) containing the correct lyrics (one line per lyric segment). The application aligns the lyrics with the audio using the AI model and generates accurate timestamps for each line.
+
+This is useful when automatic lyric recognition is inaccurate but the user already has the correct lyrics. Instead of recognizing lyrics from scratch, the AI only needs to determine when each line is sung.
+
+### User Flow
+
+```text
+1. User selects an MP3 file
+2. User clicks "Load TXT & Align"
+3. User selects a .txt file containing lyrics
+4. Application uses stable-ts to align the text with the audio
+5. Application generates timestamped lyrics
+6. User can play the song with synchronized lyrics
+7. User can export the aligned lyrics as LRC/SRT/JSON
+```
+
+### Input
+
+```text
+lyrics.txt — plain text file, one lyric line per line
+```
+
+Example:
+
+```text
+When you were here before
+Couldn't look you in the eye
+You're just like an angel
+Your skin makes me cry
+```
+
+### Output
+
+```json
+[
+  {"start": 12.30, "end": 16.80, "text": "When you were here before"},
+  {"start": 17.10, "end": 21.50, "text": "Couldn't look you in the eye"},
+  {"start": 22.00, "end": 26.30, "text": "You're just like an angel"},
+  {"start": 26.80, "end": 31.20, "text": "Your skin makes me cry"}
+]
+```
+
+### Technical Implementation
+
+Uses `stable_whisper.load_model().align(audio_path, lyric_text)` to force-align user-provided lyrics with the audio. This produces more accurate timestamps than full transcription because the text content is already known.
+
+### Acceptance Criteria
+
+* The user can select a .txt file containing lyrics.
+* The application aligns the lyrics with the audio and generates timestamps.
+* The aligned lyrics can be played back with synchronized display.
+* The aligned lyrics can be exported to LRC, SRT, or JSON.
+* Empty lines in the .txt file are ignored.
+* If the .txt file is empty, the application shows an error message.
+* If alignment fails, the application shows a clear error message.

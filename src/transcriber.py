@@ -76,7 +76,7 @@ def _transcribe_whisper(audio_path, model_size):
     return lyrics
 
 
-def align_lyrics(audio_path, text_path, model_size="base"):
+def align_lyrics(audio_path, text_path, model_size="base", language="en"):
     """
     Align user-provided lyrics (TXT) with audio to generate timestamps.
 
@@ -84,6 +84,7 @@ def align_lyrics(audio_path, text_path, model_size="base"):
         audio_path: path to the audio file (mp3 or wav)
         text_path: path to a .txt file with lyrics (one line per lyric segment)
         model_size: Whisper model size
+        language: language code (e.g. 'en', 'zh', 'ja', 'ko')
 
     Returns:
         list of dicts: [{"start": float, "end": float, "text": str}, ...]
@@ -111,7 +112,7 @@ def align_lyrics(audio_path, text_path, model_size="base"):
         )
 
     model = stable_whisper.load_model(model_size)
-    result = model.align(audio_path, lyric_text)
+    result = model.align(audio_path, lyric_text, language=language)
 
     lyrics = []
     for segment in result.segments:

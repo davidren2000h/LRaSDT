@@ -54,6 +54,11 @@ class AutoLyricSyncApp:
         model_menu = tk.OptionMenu(options_row, self.model_var, "tiny", "base", "small", "medium")
         model_menu.pack(side="left", padx=5)
 
+        tk.Label(options_row, text="Language:").pack(side="left", padx=(10, 0))
+        self.lang_var = tk.StringVar(value="en")
+        lang_menu = tk.OptionMenu(options_row, self.lang_var, "en", "zh", "ja", "ko", "es", "fr", "de")
+        lang_menu.pack(side="left", padx=5)
+
         self.vocal_sep_var = tk.BooleanVar(value=False)
         tk.Checkbutton(options_row, text="Separate vocals (Demucs)", variable=self.vocal_sep_var).pack(side="left", padx=10)
 
@@ -232,7 +237,8 @@ class AutoLyricSyncApp:
 
             self._set_status("Status: Aligning lyrics with audio... (this may take a while)")
             model_size = self.model_var.get()
-            self.lyrics = align_lyrics(audio_path, txt_path, model_size=model_size)
+            language = self.lang_var.get()
+            self.lyrics = align_lyrics(audio_path, txt_path, model_size=model_size, language=language)
 
             if not self.lyrics:
                 self._set_status("Status: Alignment produced no results.")
